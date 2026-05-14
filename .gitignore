@@ -11,3 +11,6 @@ yarn-error.log*
 pnpm-debug.log*
 .next-dev.log
 .next-dev.err.log
+.cloudflared.log
+.cloudflared.err.log
+shopify/custom-pixel.local.js
