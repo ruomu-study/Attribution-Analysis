@@ -23,7 +23,7 @@ Internal attribution analysis tool for a single Shopify store.
 3. Run the initial database schema:
 
    ```bash
-   psql "$DATABASE_URL" -f db/migrations/001_initial.sql
+   npm run db:migrate
    ```
 
 4. Start the app:
