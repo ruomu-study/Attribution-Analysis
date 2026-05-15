@@ -7,6 +7,7 @@
   --panel: #ffffff;
   --accent: #156f5b;
   --danger: #a13d36;
+  --soft: #edf4f1;
 }
 
 * {
@@ -24,6 +25,11 @@ body {
 a {
   color: var(--accent);
   text-decoration: none;
+}
+
+button,
+input {
+  font: inherit;
 }
 
 .shell {
@@ -71,6 +77,20 @@ h2 {
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.buttonLink,
+.searchForm button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--text);
+  color: #ffffff;
+  padding: 0 14px;
+  font-weight: 700;
 }
 
 .status.ok {
@@ -138,6 +158,12 @@ h2 {
   margin-bottom: 12px;
 }
 
+.linkGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
 .panelHeader h2 {
   margin-bottom: 0;
 }
@@ -159,6 +185,115 @@ h2 {
   color: var(--muted);
 }
 
+.mutedText {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.searchForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.searchForm input {
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--text);
+}
+
+.journeyGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 18px;
+  margin: 18px 0;
+}
+
+.kvGrid {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.kvGrid span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.kvGrid strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+
+.timeline {
+  display: grid;
+  gap: 0;
+}
+
+.timelineItem {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+
+.timelineItem time {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.timelineItem strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.timelineItem p {
+  margin-bottom: 4px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.timelineItem small {
+  color: var(--muted);
+}
+
+.sessionTable {
+  display: grid;
+}
+
+.sessionRow {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.15fr) minmax(160px, 1fr) 80px minmax(140px, 0.7fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 48px;
+  border-top: 1px solid var(--line);
+  color: var(--text);
+}
+
+.sessionRow span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sessionRow:not(.tableHead):hover {
+  background: var(--soft);
+}
+
+.tableHead {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 @media (max-width: 720px) {
   .shell {
     width: min(100vw - 24px, 1120px);
@@ -171,6 +306,14 @@ h2 {
   }
 
   .metricGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .searchForm,
+  .journeyGrid,
+  .kvGrid,
+  .timelineItem,
+  .sessionRow {
     grid-template-columns: 1fr;
   }
 }

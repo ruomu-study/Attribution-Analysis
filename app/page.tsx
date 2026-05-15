@@ -79,7 +79,10 @@ export default async function Home() {
       <section className="panel">
         <div className="panelHeader">
           <h2>事件漏斗计数</h2>
-          <a href="/api/events/recent">查看最近事件 JSON</a>
+          <div className="linkGroup">
+            <a href="/journeys">查看用户路径</a>
+            <a href="/api/events/recent">最近事件 JSON</a>
+          </div>
         </div>
         <div className="funnelList">
           {overview.funnel.length === 0 && <p className="empty">还没有采集到事件。</p>}
