@@ -80,6 +80,7 @@ export default async function Home() {
         <div className="panelHeader">
           <h2>事件漏斗计数</h2>
           <div className="linkGroup">
+            <a href="/monitor">监听测试面板</a>
             <a href="/journeys">查看用户路径</a>
             <a href="/visitors">查看 Visitor 归因</a>
             <a href="/api/events/recent">最近事件 JSON</a>

@@ -79,6 +79,16 @@ Source attribution is inherited from the session onto later events, so product v
 
 Local quick tunnels are useful for testing, but they are not persistent. If the tunnel or `npm run dev` process stops, Shopify can no longer send events to `/api/events/collect`.
 
+Use `/monitor` during testing. It refreshes every 5 seconds and shows:
+
+- whether the backend has received a Pixel event in the last 2 minutes
+- the latest server receive time
+- event counts for the selected test window
+- recent events ordered by backend `created_at`
+- the configured collect URL and whether the collect secret is set
+
+Events that reach `/api/events/collect` are stored in Postgres and remain available for later analysis. The monitor page only changes the display window; it does not delete old records.
+
 For continuous collection:
 
 1. Deploy this app to a stable HTTPS domain.

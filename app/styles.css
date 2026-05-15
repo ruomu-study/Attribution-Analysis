@@ -28,7 +28,8 @@ a {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -144,6 +145,10 @@ h2 {
   margin-top: 12px;
   font-size: 34px;
   line-height: 1;
+}
+
+.metricSmall {
+  font-size: 28px !important;
 }
 
 .panel {
@@ -309,6 +314,109 @@ h2 {
   grid-template-columns: 110px minmax(120px, 0.55fr) minmax(180px, 1fr) minmax(220px, 1.2fr);
 }
 
+.monitorHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.35fr);
+  gap: 18px;
+  align-items: stretch;
+  margin-bottom: 18px;
+}
+
+.monitorSubText {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.monitorStatus {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 18px;
+}
+
+.monitorStatus strong {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.monitorStatus span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.monitorStatus.ok {
+  border-color: #9dcbba;
+  background: #e7f3ee;
+  color: var(--accent);
+}
+
+.monitorStatus.warn {
+  border-color: #d8bf7d;
+  background: #fff8df;
+  color: #79600c;
+}
+
+.monitorStatus.bad {
+  border-color: #d9aaa5;
+  background: #f7e7e4;
+  color: var(--danger);
+}
+
+.monitorControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.monitorControls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.monitorControls select {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 0 12px;
+}
+
+.monitorEventTable {
+  display: grid;
+}
+
+.monitorEventRow {
+  display: grid;
+  grid-template-columns: 118px minmax(130px, 0.65fr) minmax(150px, 0.8fr) minmax(210px, 1fr) minmax(260px, 1.35fr);
+  gap: 12px;
+  align-items: start;
+  min-height: 58px;
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+  color: var(--text);
+}
+
+.monitorEventRow span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.monitorEventRow small {
+  color: var(--muted);
+}
+
 .sessionRow span,
 .visitorRow span,
 .visitorSessionRow span,
@@ -352,7 +460,9 @@ h2 {
   .sessionRow,
   .visitorRow,
   .visitorSessionRow,
-  .visitorTouchpointRow {
+  .visitorTouchpointRow,
+  .monitorHero,
+  .monitorEventRow {
     grid-template-columns: 1fr;
   }
 }
