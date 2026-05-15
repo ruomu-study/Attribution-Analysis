@@ -48,6 +48,24 @@ function toNumeric(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function normalizedUrl(value?: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const url = new URL(value);
+    url.hash = "";
+    return url.toString();
+  } catch (_error) {
+    return value;
+  }
+}
+
+function isLandingPageEvent(event: CollectEventInput): boolean {
+  return event.event_name === "page_viewed" && normalizedUrl(event.page_url) === normalizedUrl(event.landing_page);
+}
+
 export async function storeCollectedEvent(raw: unknown) {
   const event = collectEventSchema.parse(raw);
   const pool = getPool();
@@ -215,7 +233,7 @@ export async function storeCollectedEvent(raw: unknown) {
       ]
     );
 
-    if (event.event_name === "page_viewed" || event.utm_source || event.utm_medium || clickId || event.referrer) {
+    if (isLandingPageEvent(event)) {
       await client.query(
         `
           insert into touchpoints (
