@@ -133,18 +133,20 @@ async function buildPayload(event) {
   };
 }
 
-for (const eventName of TRACKED_EVENTS) {
-  analytics.subscribe(eventName, async (event) => {
-    const payload = await buildPayload(event);
+analytics.subscribe("all_standard_events", async (event) => {
+  if (!TRACKED_EVENTS.includes(event.name)) {
+    return;
+  }
 
-    fetch(COLLECT_URL, {
-      method: "POST",
-      keepalive: true,
-      headers: {
-        "content-type": "application/json",
-        "x-attribution-secret": COLLECT_SECRET
-      },
-      body: JSON.stringify(payload)
-    });
+  const payload = await buildPayload(event);
+
+  fetch(COLLECT_URL, {
+    method: "POST",
+    keepalive: true,
+    headers: {
+      "content-type": "application/json",
+      "x-attribution-secret": COLLECT_SECRET
+    },
+    body: JSON.stringify(payload)
   });
-}
+});
