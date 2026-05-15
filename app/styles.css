@@ -104,6 +104,14 @@ h2 {
   background: #f7e7e4;
 }
 
+.textOk {
+  color: var(--accent);
+}
+
+.textBad {
+  color: var(--danger);
+}
+
 .notice,
 .panel,
 .metric {

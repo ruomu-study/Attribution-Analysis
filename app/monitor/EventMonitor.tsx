@@ -27,6 +27,13 @@ type MonitorPayload = {
   status: "active" | "idle" | "stale" | "waiting" | "offline";
   appUrl: string | null;
   collectUrl: string | null;
+  publicEndpoint?: {
+    checked: boolean;
+    ok: boolean;
+    url: string | null;
+    statusCode: number | null;
+    error: string | null;
+  };
   collectSecretConfigured: boolean;
   windowMinutes: number;
   databaseTime: string;
@@ -234,6 +241,10 @@ export function EventMonitor() {
           <div className="kvGrid">
             <span>Collect URL</span>
             <strong>{data?.collectUrl || "NEXT_PUBLIC_APP_URL 未配置"}</strong>
+            <span>Public tunnel</span>
+            <strong className={data?.publicEndpoint?.ok ? "textOk" : "textBad"}>
+              {data?.publicEndpoint?.ok ? "reachable" : data?.publicEndpoint?.error || "not checked"}
+            </strong>
             <span>Latest receive</span>
             <strong>{formatDate(data?.latestReceivedAt)}</strong>
             <span>Latest event</span>

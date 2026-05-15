@@ -13,4 +13,5 @@ pnpm-debug.log*
 .next-dev.err.log
 .cloudflared.log
 .cloudflared.err.log
+.tmp/
 shopify/custom-pixel.local.js

@@ -86,6 +86,7 @@ Use `/monitor` during testing. It refreshes every 5 seconds and shows:
 - event counts for the selected test window
 - recent events ordered by backend `created_at`
 - the configured collect URL and whether the collect secret is set
+- whether the public tunnel/domain can reach `/api/health`
 
 Events that reach `/api/events/collect` are stored in Postgres and remain available for later analysis. The monitor page only changes the display window; it does not delete old records.
 

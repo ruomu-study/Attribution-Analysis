@@ -30,14 +30,56 @@ function listenerStatus(ageSeconds: number | null) {
   return "stale";
 }
 
+async function checkPublicEndpoint(appUrl?: string | null) {
+  if (!appUrl) {
+    return {
+      checked: false,
+      ok: false,
+      url: null,
+      statusCode: null,
+      error: "NEXT_PUBLIC_APP_URL is not configured"
+    };
+  }
+
+  const url = `${appUrl.replace(/\/$/, "")}/api/health`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+
+  try {
+    const response = await fetch(url, {
+      cache: "no-store",
+      signal: controller.signal
+    });
+
+    return {
+      checked: true,
+      ok: response.ok,
+      url,
+      statusCode: response.status,
+      error: response.ok ? null : `HTTP ${response.status}`
+    };
+  } catch (error) {
+    return {
+      checked: true,
+      ok: false,
+      url,
+      statusCode: null,
+      error: error instanceof Error ? error.message : "Public endpoint check failed"
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const windowMinutes = numberParam(searchParams.get("windowMinutes"), 120, 5, 10080);
   const limit = numberParam(searchParams.get("limit"), 50, 10, 200);
   const pool = getPool();
+  const appUrl = getOptionalEnv("NEXT_PUBLIC_APP_URL") || null;
 
   try {
-    const [summaryResult, eventCountsResult, recentEventsResult] = await Promise.all([
+    const [summaryResult, eventCountsResult, recentEventsResult, publicEndpoint] = await Promise.all([
       pool.query(
         `
           select
@@ -90,7 +132,8 @@ export async function GET(request: NextRequest) {
           limit $1
         `,
         [limit]
-      )
+      ),
+      checkPublicEndpoint(appUrl)
     ]);
 
     const summary = summaryResult.rows[0];
@@ -99,10 +142,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       status: listenerStatus(ageSeconds),
-      appUrl: getOptionalEnv("NEXT_PUBLIC_APP_URL") || null,
-      collectUrl: getOptionalEnv("NEXT_PUBLIC_APP_URL")
-        ? `${getOptionalEnv("NEXT_PUBLIC_APP_URL")}/api/events/collect`
-        : null,
+      appUrl,
+      collectUrl: appUrl ? `${appUrl.replace(/\/$/, "")}/api/events/collect` : null,
+      publicEndpoint,
       collectSecretConfigured: Boolean(getOptionalEnv("EVENT_COLLECT_SECRET")),
       windowMinutes,
       databaseTime: summary.database_time,
