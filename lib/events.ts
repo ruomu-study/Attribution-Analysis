@@ -75,18 +75,24 @@ function isLandingPageEvent(event: CollectEventInput): boolean {
   return event.event_name === "page_viewed" && normalizedUrl(event.page_url) === normalizedUrl(event.landing_page);
 }
 
+type SessionAttribution = {
+  landing_page: string | null;
+  referrer: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+  gclid: string | null;
+  fbclid: string | null;
+  device: string | null;
+  country: string | null;
+};
+
 export async function storeCollectedEvent(raw: unknown) {
   const event = collectEventSchema.parse(raw);
   const pool = getPool();
   const eventTime = event.event_time ? new Date(event.event_time) : new Date();
-  const channel = classifyChannel({
-    utmSource: event.utm_source,
-    utmMedium: event.utm_medium,
-    referrer: event.referrer,
-    gclid: event.gclid,
-    fbclid: event.fbclid
-  });
-  const clickId = event.gclid || event.fbclid || event.ttclid || null;
 
   const client = await pool.connect();
 
@@ -111,7 +117,12 @@ export async function storeCollectedEvent(raw: unknown) {
         values ($1, $2, $2, $3, $3, $4, $5, $6, $7, $8, $9)
         on conflict (visitor_id) do update set
           last_seen_at = greatest(visitors.last_seen_at, excluded.last_seen_at),
-          latest_client_id = excluded.latest_client_id
+          latest_client_id = excluded.latest_client_id,
+          first_landing_page = coalesce(visitors.first_landing_page, excluded.first_landing_page),
+          first_referrer = coalesce(visitors.first_referrer, excluded.first_referrer),
+          first_utm_source = coalesce(visitors.first_utm_source, excluded.first_utm_source),
+          first_utm_medium = coalesce(visitors.first_utm_medium, excluded.first_utm_medium),
+          first_utm_campaign = coalesce(visitors.first_utm_campaign, excluded.first_utm_campaign)
       `,
       [
         event.visitor_id,
@@ -147,7 +158,18 @@ export async function storeCollectedEvent(raw: unknown) {
         )
         values ($1, $2, $3, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         on conflict (session_id) do update set
-          last_seen_at = greatest(sessions.last_seen_at, excluded.last_seen_at)
+          last_seen_at = greatest(sessions.last_seen_at, excluded.last_seen_at),
+          landing_page = coalesce(sessions.landing_page, excluded.landing_page),
+          referrer = coalesce(sessions.referrer, excluded.referrer),
+          utm_source = coalesce(sessions.utm_source, excluded.utm_source),
+          utm_medium = coalesce(sessions.utm_medium, excluded.utm_medium),
+          utm_campaign = coalesce(sessions.utm_campaign, excluded.utm_campaign),
+          utm_content = coalesce(sessions.utm_content, excluded.utm_content),
+          utm_term = coalesce(sessions.utm_term, excluded.utm_term),
+          gclid = coalesce(sessions.gclid, excluded.gclid),
+          fbclid = coalesce(sessions.fbclid, excluded.fbclid),
+          device = coalesce(sessions.device, excluded.device),
+          country = coalesce(sessions.country, excluded.country)
       `,
       [
         event.session_id,
@@ -166,6 +188,53 @@ export async function storeCollectedEvent(raw: unknown) {
         event.country || null
       ]
     );
+
+    const attributionResult = await client.query<SessionAttribution>(
+      `
+        select
+          landing_page,
+          referrer,
+          utm_source,
+          utm_medium,
+          utm_campaign,
+          utm_content,
+          utm_term,
+          gclid,
+          fbclid,
+          device,
+          country
+        from sessions
+        where session_id = $1
+      `,
+      [event.session_id]
+    );
+    const sessionAttribution = attributionResult.rows[0];
+    const effective = {
+      landing_page: event.landing_page || sessionAttribution?.landing_page || event.page_url || null,
+      referrer: event.referrer || sessionAttribution?.referrer || null,
+      utm_source: event.utm_source || sessionAttribution?.utm_source || null,
+      utm_medium: event.utm_medium || sessionAttribution?.utm_medium || null,
+      utm_campaign: event.utm_campaign || sessionAttribution?.utm_campaign || null,
+      utm_content: event.utm_content || sessionAttribution?.utm_content || null,
+      utm_term: event.utm_term || sessionAttribution?.utm_term || null,
+      gclid: event.gclid || sessionAttribution?.gclid || null,
+      fbclid: event.fbclid || sessionAttribution?.fbclid || null,
+      device: event.device || sessionAttribution?.device || null,
+      country: event.country || sessionAttribution?.country || null
+    };
+    const channel = classifyChannel({
+      utmSource: effective.utm_source,
+      utmMedium: effective.utm_medium,
+      utmCampaign: effective.utm_campaign,
+      referrer: effective.referrer,
+      gclid: effective.gclid,
+      fbclid: effective.fbclid
+    });
+    const clickId = effective.gclid || effective.fbclid || event.ttclid || null;
+    const eventWithEffectiveAttribution = {
+      ...event,
+      landing_page: effective.landing_page
+    };
 
     const insertedEvent = await client.query<{id: string}>(
       `
@@ -216,7 +285,18 @@ export async function storeCollectedEvent(raw: unknown) {
           $31, $32, $33, $34, $35, $36, $37, $38
         )
         on conflict (event_id, event_name) do update set
-          raw_payload = excluded.raw_payload
+          raw_payload = excluded.raw_payload,
+          landing_page = coalesce(events.landing_page, excluded.landing_page),
+          referrer = coalesce(events.referrer, excluded.referrer),
+          utm_source = coalesce(events.utm_source, excluded.utm_source),
+          utm_medium = coalesce(events.utm_medium, excluded.utm_medium),
+          utm_campaign = coalesce(events.utm_campaign, excluded.utm_campaign),
+          utm_content = coalesce(events.utm_content, excluded.utm_content),
+          utm_term = coalesce(events.utm_term, excluded.utm_term),
+          gclid = coalesce(events.gclid, excluded.gclid),
+          fbclid = coalesce(events.fbclid, excluded.fbclid),
+          device = coalesce(events.device, excluded.device),
+          country = coalesce(events.country, excluded.country)
         returning id
       `,
       [
@@ -229,18 +309,18 @@ export async function storeCollectedEvent(raw: unknown) {
         event.session_id,
         event.page_url || null,
         event.page_title || null,
-        event.landing_page || null,
-        event.referrer || null,
-        event.utm_source || null,
-        event.utm_medium || null,
-        event.utm_campaign || null,
-        event.utm_content || null,
-        event.utm_term || null,
-        event.gclid || null,
-        event.fbclid || null,
+        effective.landing_page,
+        effective.referrer,
+        effective.utm_source,
+        effective.utm_medium,
+        effective.utm_campaign,
+        effective.utm_content,
+        effective.utm_term,
+        effective.gclid,
+        effective.fbclid,
         event.ttclid || null,
-        event.device || null,
-        event.country || null,
+        effective.device,
+        effective.country,
         event.product_id || null,
         event.variant_id || null,
         event.product_title || null,
@@ -261,7 +341,7 @@ export async function storeCollectedEvent(raw: unknown) {
       ]
     );
 
-    if (isLandingPageEvent(event)) {
+    if (isLandingPageEvent(eventWithEffectiveAttribution)) {
       await client.query(
         `
           insert into touchpoints (
@@ -287,13 +367,13 @@ export async function storeCollectedEvent(raw: unknown) {
           insertedEvent.rows[0].id,
           eventTime,
           channel,
-          event.utm_source || null,
-          event.utm_medium || null,
-          event.utm_campaign || null,
-          event.utm_content || null,
-          event.utm_term || null,
-          event.landing_page || event.page_url || null,
-          event.referrer || null,
+          effective.utm_source,
+          effective.utm_medium,
+          effective.utm_campaign,
+          effective.utm_content,
+          effective.utm_term,
+          effective.landing_page || event.page_url || null,
+          effective.referrer,
           clickId
         ]
       );

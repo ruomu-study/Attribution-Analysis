@@ -16,15 +16,24 @@ const socialHosts = ["facebook.", "instagram.", "t.co", "twitter.", "x.com", "pi
 export function classifyChannel(input: {
   utmSource?: string | null;
   utmMedium?: string | null;
+  utmCampaign?: string | null;
   referrer?: string | null;
   gclid?: string | null;
   fbclid?: string | null;
 }): Channel {
   const source = input.utmSource?.toLowerCase() || "";
   const medium = input.utmMedium?.toLowerCase() || "";
+  const campaign = input.utmCampaign?.toLowerCase() || "";
   const referrer = input.referrer?.toLowerCase() || "";
 
-  if (input.gclid || medium.includes("cpc") || medium.includes("ppc") || medium.includes("paidsearch")) {
+  if (
+    input.gclid ||
+    medium.includes("cpc") ||
+    medium.includes("ppc") ||
+    medium.includes("paidsearch") ||
+    medium.includes("paid_search") ||
+    medium.includes("shopping")
+  ) {
     return "paid_search";
   }
 
@@ -46,6 +55,14 @@ export function classifyChannel(input: {
 
   if (medium.includes("affiliate") || source.includes("affiliate")) {
     return "affiliate";
+  }
+
+  if (
+    medium.includes("product_sync") ||
+    medium.includes("organic_shopping") ||
+    campaign.includes("sag_organic")
+  ) {
+    return "organic_search";
   }
 
   if (medium.includes("organic") && socialHosts.some((host) => source.includes(host.replace(".", "")))) {

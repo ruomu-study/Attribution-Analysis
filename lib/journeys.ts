@@ -6,6 +6,7 @@ export type JourneySummary = {
   started_at: string;
   last_seen_at: string;
   landing_page: string | null;
+  referrer: string | null;
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
@@ -122,6 +123,7 @@ export async function getJourneySummaries(limit = 20): Promise<JourneySummary[]>
         s.started_at,
         s.last_seen_at,
         s.landing_page,
+        s.referrer,
         s.utm_source,
         s.utm_medium,
         s.utm_campaign,
@@ -140,6 +142,7 @@ export async function getJourneySummaries(limit = 20): Promise<JourneySummary[]>
         s.started_at,
         s.last_seen_at,
         s.landing_page,
+        s.referrer,
         s.utm_source,
         s.utm_medium,
         s.utm_campaign

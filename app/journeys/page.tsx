@@ -32,13 +32,36 @@ function shortUrl(value?: string | null) {
   }
 }
 
+function isInternalReferrer(value?: string | null) {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const hostname = new URL(value).hostname.replace(/^www\./, "");
+    return hostname === "lightsin.co.uk" || hostname.endsWith(".myshopify.com");
+  } catch (_error) {
+    return false;
+  }
+}
+
 function sourceLabel(session: {
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
+  referrer?: string | null;
 }) {
   const parts = [session.utm_source, session.utm_medium, session.utm_campaign].filter(Boolean);
-  return parts.length > 0 ? parts.join(" / ") : "direct or unknown";
+
+  if (parts.length > 0) {
+    return parts.join(" / ");
+  }
+
+  if (session.referrer && !isInternalReferrer(session.referrer)) {
+    return shortUrl(session.referrer);
+  }
+
+  return "direct or unknown";
 }
 
 export default async function JourneysPage({searchParams}: {searchParams: SearchParams}) {

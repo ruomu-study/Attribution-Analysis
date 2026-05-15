@@ -56,6 +56,36 @@ https://your-domain.com/api/webhooks/shopify/orders
 
 Set `SHOPIFY_WEBHOOK_SECRET` to the webhook signing secret.
 
+## Visitor and source validation
+
+Use `/visitors` to validate whether the same browser keeps the same `visitor_id` across repeat visits.
+
+Recommended same-device test:
+
+1. Open the store with a test URL such as `https://lightsin.co.uk/?utm_source=codex_test&utm_medium=debug&utm_campaign=visitor_repeat`.
+2. View a product and add it to cart.
+3. Wait a few minutes, then open the same browser profile again and repeat the add-to-cart flow.
+4. Open `/visitors` and confirm the same `visitor_id` has multiple sessions or additional events.
+
+Expected behavior:
+
+- Same browser profile with cookies preserved: the `visitor_id` should stay stable.
+- Incognito, another browser, another device, or cleared cookies: Shopify/pixel storage can create a new `visitor_id`.
+- A new `session_id` is expected after 30 minutes of inactivity.
+
+Source attribution is inherited from the session onto later events, so product views, add-to-cart, and checkout events can still be analyzed by the entry source even when their own URLs do not contain UTM parameters.
+
+## Persistent collection
+
+Local quick tunnels are useful for testing, but they are not persistent. If the tunnel or `npm run dev` process stops, Shopify can no longer send events to `/api/events/collect`.
+
+For continuous collection:
+
+1. Deploy this app to a stable HTTPS domain.
+2. Update the Custom Pixel `COLLECT_URL` to `https://your-stable-domain.com/api/events/collect`.
+3. Update Shopify order webhooks to `https://your-stable-domain.com/api/webhooks/shopify/orders`.
+4. Keep Postgres on a persistent database service or a server with backups enabled.
+
 ## Theme image-level tracking
 
 To analyze which product-card and product-page images influence clicks and add-to-cart behavior, install the tracker snippet documented in:
