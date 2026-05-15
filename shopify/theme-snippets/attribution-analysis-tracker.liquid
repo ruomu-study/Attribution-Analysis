@@ -1,0 +1,232 @@
+{% doc %}
+Publishes storefront interaction events for attribution analysis.
+
+@example
+{% render 'attribution-analysis-tracker' %}
+{% enddoc %}
+
+<script>
+  window.AttributionAnalysis = window.AttributionAnalysis || {};
+  window.AttributionAnalysis.product = {
+    id: {% if product %}{{ product.id | json }}{% else %}null{% endif %},
+    handle: {% if product %}{{ product.handle | json }}{% else %}null{% endif %},
+    title: {% if product %}{{ product.title | json }}{% else %}null{% endif %},
+    variantId: {% if product %}{{ product.selected_or_first_available_variant.id | json }}{% else %}null{% endif %}
+  };
+
+  (function () {
+    var namespace = "attribution_analysis:";
+    var seenImpressions = new WeakSet();
+    var lastProductCard = null;
+    var lastProductMedia = null;
+
+    function publish(name, data) {
+      if (!window.Shopify || !Shopify.analytics || typeof Shopify.analytics.publish !== "function") {
+        return;
+      }
+
+      Shopify.analytics.publish(namespace + name, data || {});
+    }
+
+    function closestProductLink(element) {
+      if (!element || !element.closest) {
+        return null;
+      }
+
+      return element.closest('a[href*="/products/"]');
+    }
+
+    function productHandleFromUrl(url) {
+      try {
+        var parsed = new URL(url, window.location.origin);
+        var parts = parsed.pathname.split("/").filter(Boolean);
+        var index = parts.indexOf("products");
+        return index >= 0 ? parts[index + 1] || null : null;
+      } catch (_error) {
+        return null;
+      }
+    }
+
+    function imageFromElement(element) {
+      if (!element) {
+        return null;
+      }
+
+      if (element.tagName === "IMG") {
+        return element;
+      }
+
+      return element.querySelector("img");
+    }
+
+    function normalizeImageUrl(value) {
+      if (!value) {
+        return null;
+      }
+
+      try {
+        return new URL(value, window.location.origin).toString();
+      } catch (_error) {
+        return value;
+      }
+    }
+
+    function cardPosition(link) {
+      var cards = Array.prototype.slice.call(document.querySelectorAll('a[href*="/products/"]'));
+      var index = cards.indexOf(link);
+      return index >= 0 ? index + 1 : null;
+    }
+
+    function cardPayload(link, target) {
+      var image = imageFromElement(link);
+      var handle = productHandleFromUrl(link.href);
+
+      return {
+        surface: document.body && document.body.dataset ? document.body.dataset.template || "storefront" : "storefront",
+        list_name: document.title || null,
+        card_position: cardPosition(link),
+        media_url: normalizeImageUrl(image ? image.currentSrc || image.src : null),
+        media_alt: image ? image.alt || null : null,
+        product_handle: handle,
+        product_title: link.getAttribute("aria-label") || link.textContent.trim().replace(/\s+/g, " ").slice(0, 180) || null,
+        interaction_target: target || "product_card"
+      };
+    }
+
+    function mediaPosition(image) {
+      var images = Array.prototype.slice.call(document.querySelectorAll('main img, [id*="MediaGallery"] img, [class*="media-gallery"] img'));
+      var index = images.indexOf(image);
+      return index >= 0 ? index + 1 : null;
+    }
+
+    function mediaPayload(image, target) {
+      var product = window.AttributionAnalysis.product || {};
+
+      return {
+        surface: "product",
+        list_name: document.title || null,
+        media_id: image.getAttribute("data-media-id") || image.closest("[data-media-id]")?.getAttribute("data-media-id") || null,
+        media_url: normalizeImageUrl(image.currentSrc || image.src),
+        media_position: mediaPosition(image),
+        media_alt: image.alt || null,
+        product_id: product.id ? String(product.id) : null,
+        variant_id: product.variantId ? String(product.variantId) : null,
+        product_handle: product.handle || productHandleFromUrl(window.location.href),
+        product_title: product.title || document.title || null,
+        interaction_target: target || "product_media"
+      };
+    }
+
+    function observeProductCards() {
+      var links = Array.prototype.slice.call(document.querySelectorAll('a[href*="/products/"]'));
+
+      if (!("IntersectionObserver" in window)) {
+        return;
+      }
+
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting || seenImpressions.has(entry.target)) {
+            return;
+          }
+
+          seenImpressions.add(entry.target);
+          publish("collection_product_impression", cardPayload(entry.target, "product_card_impression"));
+        });
+      }, {threshold: 0.55});
+
+      links.forEach(function (link) {
+        observer.observe(link);
+      });
+    }
+
+    function bindProductCardClicks() {
+      document.addEventListener("click", function (event) {
+        var link = closestProductLink(event.target);
+
+        if (!link) {
+          return;
+        }
+
+        lastProductCard = cardPayload(link, "product_card_click");
+        publish("collection_product_click", lastProductCard);
+      }, true);
+    }
+
+    function observeProductMedia() {
+      var images = Array.prototype.slice.call(document.querySelectorAll('main img, [id*="MediaGallery"] img, [class*="media-gallery"] img'));
+
+      if (!("IntersectionObserver" in window)) {
+        return;
+      }
+
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting || seenImpressions.has(entry.target)) {
+            return;
+          }
+
+          seenImpressions.add(entry.target);
+          lastProductMedia = mediaPayload(entry.target, "product_media_view");
+          publish("product_media_viewed", lastProductMedia);
+        });
+      }, {threshold: 0.65});
+
+      images.forEach(function (image) {
+        observer.observe(image);
+      });
+    }
+
+    function bindProductMediaClicks() {
+      document.addEventListener("click", function (event) {
+        var image = event.target && event.target.closest ? event.target.closest("img") : null;
+
+        if (!image) {
+          return;
+        }
+
+        lastProductMedia = mediaPayload(image, "product_media_click");
+        publish("product_media_clicked", lastProductMedia);
+      }, true);
+    }
+
+    function bindAddToCartSnapshots() {
+      document.addEventListener("submit", function (event) {
+        var form = event.target;
+
+        if (!form || !form.matches || !form.matches('form[action*="/cart/add"]')) {
+          return;
+        }
+
+        var snapshot = lastProductMedia || lastProductCard || {};
+        publish("add_to_cart_attribution_snapshot", {
+          surface: snapshot.surface || "product",
+          list_name: snapshot.list_name || document.title || null,
+          media_id: snapshot.media_id || null,
+          media_url: snapshot.media_url || null,
+          media_position: snapshot.media_position || null,
+          media_alt: snapshot.media_alt || null,
+          product_id: snapshot.product_id || (window.AttributionAnalysis.product.id ? String(window.AttributionAnalysis.product.id) : null),
+          variant_id: snapshot.variant_id || (window.AttributionAnalysis.product.variantId ? String(window.AttributionAnalysis.product.variantId) : null),
+          product_handle: snapshot.product_handle || window.AttributionAnalysis.product.handle || productHandleFromUrl(window.location.href),
+          product_title: snapshot.product_title || window.AttributionAnalysis.product.title || document.title || null,
+          interaction_target: "add_to_cart_snapshot"
+        });
+      }, true);
+    }
+
+    function start() {
+      observeProductCards();
+      bindProductCardClicks();
+      observeProductMedia();
+      bindProductMediaClicks();
+      bindAddToCartSnapshots();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", start);
+    } else {
+      start();
+    }
+  })();
+</script>

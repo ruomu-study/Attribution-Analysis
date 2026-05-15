@@ -265,6 +265,13 @@ h2 {
   color: var(--muted);
 }
 
+.mediaLink {
+  display: block;
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
 .sessionTable {
   display: grid;
 }

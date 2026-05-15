@@ -18,6 +18,11 @@ export async function GET() {
         utm_medium,
         utm_campaign,
         product_title,
+        product_handle,
+        surface,
+        media_url,
+        media_position,
+        interaction_target,
         cart_value,
         order_id
       from events

@@ -132,12 +132,18 @@ export default async function JourneysPage({searchParams}: {searchParams: Search
                 <time>{formatDate(event.event_time)}</time>
                 <div>
                   <strong>{event.event_name}</strong>
-                  <p>{event.product_title || shortUrl(event.page_url)}</p>
+                  <p>{event.product_title || event.product_handle || shortUrl(event.page_url)}</p>
+                  {event.media_url && (
+                    <a className="mediaLink" href={event.media_url} target="_blank" rel="noreferrer">
+                      Image {event.media_position || "?"}: {event.media_alt || shortUrl(event.media_url)}
+                    </a>
+                  )}
                   {(event.cart_value || event.checkout_token || event.order_id) && (
                     <small>
                       {event.cart_value ? `Cart ${event.currency || ""} ${event.cart_value}` : ""}
                       {event.checkout_token ? ` · checkout ${event.checkout_token}` : ""}
                       {event.order_id ? ` · order ${event.order_id}` : ""}
+                      {event.interaction_target ? ` · ${event.interaction_target}` : ""}
                     </small>
                   )}
                 </div>

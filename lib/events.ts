@@ -33,7 +33,16 @@ const collectEventSchema = z
     cart_value: moneySchema,
     currency: z.string().optional().nullable(),
     checkout_token: z.string().optional().nullable(),
-    order_id: z.string().optional().nullable()
+    order_id: z.string().optional().nullable(),
+    surface: z.string().optional().nullable(),
+    list_name: z.string().optional().nullable(),
+    card_position: z.number().int().optional().nullable(),
+    media_id: z.string().optional().nullable(),
+    media_url: z.string().optional().nullable(),
+    media_position: z.number().int().optional().nullable(),
+    media_alt: z.string().optional().nullable(),
+    product_handle: z.string().optional().nullable(),
+    interaction_target: z.string().optional().nullable()
   })
   .passthrough();
 
@@ -189,12 +198,22 @@ export async function storeCollectedEvent(raw: unknown) {
           currency,
           checkout_token,
           order_id,
+          surface,
+          list_name,
+          card_position,
+          media_id,
+          media_url,
+          media_position,
+          media_alt,
+          product_handle,
+          interaction_target,
           raw_payload
         )
         values (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
           $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-          $21, $22, $23, $24, $25, $26, $27, $28, $29
+          $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+          $31, $32, $33, $34, $35, $36, $37, $38
         )
         on conflict (event_id, event_name) do update set
           raw_payload = excluded.raw_payload
@@ -229,6 +248,15 @@ export async function storeCollectedEvent(raw: unknown) {
         event.currency || null,
         event.checkout_token || null,
         event.order_id || null,
+        event.surface || null,
+        event.list_name || null,
+        event.card_position || null,
+        event.media_id || null,
+        event.media_url || null,
+        event.media_position || null,
+        event.media_alt || null,
+        event.product_handle || null,
+        event.interaction_target || null,
         raw
       ]
     );

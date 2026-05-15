@@ -55,3 +55,11 @@ https://your-domain.com/api/webhooks/shopify/orders
 ```
 
 Set `SHOPIFY_WEBHOOK_SECRET` to the webhook signing secret.
+
+## Theme image-level tracking
+
+To analyze which product-card and product-page images influence clicks and add-to-cart behavior, install the tracker snippet documented in:
+
+```txt
+docs/theme-tracking.md
+```

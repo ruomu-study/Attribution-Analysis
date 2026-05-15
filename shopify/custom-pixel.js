@@ -14,6 +14,15 @@ const TRACKED_EVENTS = [
   "checkout_completed"
 ];
 
+const CUSTOM_EVENT_PREFIX = "attribution_analysis:";
+const TRACKED_CUSTOM_EVENTS = [
+  "attribution_analysis:collection_product_impression",
+  "attribution_analysis:collection_product_click",
+  "attribution_analysis:product_media_viewed",
+  "attribution_analysis:product_media_clicked",
+  "attribution_analysis:add_to_cart_attribution_snapshot"
+];
+
 const VISITOR_COOKIE = "aa_visitor_id";
 const SESSION_COOKIE = "aa_session_id";
 const LANDING_COOKIE = "aa_landing_page";
@@ -84,6 +93,32 @@ function extractCommerce(event) {
   };
 }
 
+function toNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function extractCustomAttribution(event) {
+  const data = event.customData || {};
+
+  const payload = {
+    surface: data.surface || null,
+    list_name: data.list_name || null,
+    card_position: toNumber(data.card_position),
+    media_id: data.media_id ? String(data.media_id) : null,
+    media_url: data.media_url || null,
+    media_position: toNumber(data.media_position),
+    media_alt: data.media_alt || null,
+    product_id: data.product_id ? String(data.product_id) : null,
+    variant_id: data.variant_id ? String(data.variant_id) : null,
+    product_title: data.product_title || null,
+    product_handle: data.product_handle || null,
+    interaction_target: data.interaction_target || null
+  };
+
+  return Object.fromEntries(Object.entries(payload).filter((entry) => entry[1] !== null && entry[1] !== undefined));
+}
+
 async function buildPayload(event) {
   const pageUrl = event.context?.document?.location?.href || event.context?.window?.location?.href || "";
   const referrer = event.context?.document?.referrer || "";
@@ -105,6 +140,7 @@ async function buildPayload(event) {
 
   const landingPage = (await getCookie(LANDING_COOKIE)) || pageUrl;
   const commerce = extractCommerce(event);
+  const customAttribution = extractCustomAttribution(event);
 
   return {
     event_id: event.id,
@@ -129,15 +165,12 @@ async function buildPayload(event) {
     device: getDevice(userAgent),
     country: event.context?.navigator?.language || null,
     ...commerce,
+    ...customAttribution,
     raw_event: event
   };
 }
 
-analytics.subscribe("all_standard_events", async (event) => {
-  if (!TRACKED_EVENTS.includes(event.name)) {
-    return;
-  }
-
+async function sendEvent(event) {
   const payload = await buildPayload(event);
 
   fetch(COLLECT_URL, {
@@ -149,4 +182,20 @@ analytics.subscribe("all_standard_events", async (event) => {
     },
     body: JSON.stringify(payload)
   });
+}
+
+analytics.subscribe("all_standard_events", async (event) => {
+  if (!TRACKED_EVENTS.includes(event.name)) {
+    return;
+  }
+
+  await sendEvent(event);
+});
+
+analytics.subscribe("all_custom_events", async (event) => {
+  if (!event.name.startsWith(CUSTOM_EVENT_PREFIX) || !TRACKED_CUSTOM_EVENTS.includes(event.name)) {
+    return;
+  }
+
+  await sendEvent(event);
 });

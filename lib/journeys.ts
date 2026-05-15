@@ -24,6 +24,12 @@ export type JourneyEvent = {
   event_time: string;
   page_url: string | null;
   product_title: string | null;
+  product_handle: string | null;
+  surface: string | null;
+  media_url: string | null;
+  media_position: number | null;
+  media_alt: string | null;
+  interaction_target: string | null;
   cart_value: string | null;
   currency: string | null;
   checkout_token: string | null;
@@ -191,6 +197,12 @@ export async function getJourneyDetail(sessionId: string): Promise<JourneyDetail
         event_time,
         page_url,
         product_title,
+        product_handle,
+        surface,
+        media_url,
+        media_position,
+        media_alt,
+        interaction_target,
         cart_value,
         currency,
         checkout_token,
